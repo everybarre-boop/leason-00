@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { fireConfetti } from "./confetti";
+import { submitLead } from "./actions";
 
 type FormState = {
   name: string;
@@ -20,21 +21,36 @@ const initialState: FormState = {
 export function LeadForm() {
   const [form, setForm] = useState<FormState>(initialState);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // 백엔드 연동 전 단계 — 실제 저장 없이 성공 화면만 보여준다.
-    setSubmitted(true);
-    fireConfetti();
+    if (submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    const result = await submitLead(form);
+
+    setSubmitting(false);
+
+    if (result.ok) {
+      setSubmitted(true);
+      fireConfetti();
+    } else {
+      setError(result.error);
+    }
   }
 
   function handleReset() {
     setForm(initialState);
     setSubmitted(false);
+    setError(null);
   }
 
   if (submitted) {
@@ -122,11 +138,18 @@ export function LeadForm() {
         />
       </Field>
 
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+
       <button
         type="submit"
-        className="mt-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+        disabled={submitting}
+        className="mt-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        문의 보내기
+        {submitting ? "보내는 중…" : "문의 보내기"}
       </button>
     </form>
   );
