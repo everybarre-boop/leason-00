@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { leads } from "@/db/schema";
+import { sendLeadNotification } from "@/lib/email";
 import { validateLeadInput, type RawInput } from "./lead-validation";
 
 export type SubmitResult =
@@ -20,6 +21,9 @@ export async function submitLead(input: RawInput): Promise<SubmitResult> {
 
   try {
     await db.insert(leads).values(validated.value);
+    // 저장 성공 후 운영자에게 알림 메일을 보낸다.
+    // 메일 발송 실패는 접수 성공에 영향을 주지 않는다(내부 로그로만 남긴다).
+    await sendLeadNotification(validated.value);
     return { ok: true };
   } catch (err) {
     console.error("submitLead 저장 실패:", err);
