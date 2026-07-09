@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { Lead } from "@/db/schema";
+import type { Lead, LeadMemo } from "@/db/schema";
 import { deleteLead } from "./actions";
 import { EditModal } from "./edit-modal";
+import { MemoModal } from "./memo-modal";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -15,10 +16,17 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit",
 });
 
-export function LeadsTable({ leads }: { leads: Lead[] }) {
+export function LeadsTable({
+  leads,
+  memosByLead,
+}: {
+  leads: Lead[];
+  memosByLead: Record<string, LeadMemo[]>;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [memoLead, setMemoLead] = useState<Lead | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +115,18 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                     <div className="flex justify-end gap-2 whitespace-nowrap">
                       <button
                         type="button"
+                        onClick={() => setMemoLead(lead)}
+                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        메모
+                        {(memosByLead[lead.id]?.length ?? 0) > 0 && (
+                          <span className="ml-1 text-gray-400">
+                            {memosByLead[lead.id].length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setEditingLead(lead)}
                         className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
                       >
@@ -137,6 +157,15 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
             setEditingLead(null);
             router.refresh();
           }}
+        />
+      )}
+
+      {memoLead && (
+        <MemoModal
+          lead={memoLead}
+          memos={memosByLead[memoLead.id] ?? []}
+          onClose={() => setMemoLead(null)}
+          onChanged={() => router.refresh()}
         />
       )}
     </div>

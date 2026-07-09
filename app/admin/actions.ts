@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { leads } from "@/db/schema";
+import { leads, leadMemos } from "@/db/schema";
 import { validateLeadInput, type RawInput } from "@/app/lead-validation";
+
+// 메모 한 건의 최대 길이(문자 수).
+const MEMO_MAX_LENGTH = 2000;
 
 export type AdminActionResult =
   | { ok: true }
@@ -52,5 +55,52 @@ export async function deleteLead(id: string): Promise<AdminActionResult> {
   } catch (err) {
     console.error("deleteLead 삭제 실패:", err);
     return { ok: false, error: "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
+  }
+}
+
+/**
+ * 특정 리드에 메모를 추가한다. 서버 액션이 실제 신뢰 경계이므로 여기서도 검증한다.
+ */
+export async function addMemo(
+  leadId: string,
+  content: string
+): Promise<AdminActionResult> {
+  if (!leadId) {
+    return { ok: false, error: "잘못된 요청입니다." };
+  }
+
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return { ok: false, error: "메모 내용을 입력해주세요." };
+  }
+  if (trimmed.length > MEMO_MAX_LENGTH) {
+    return { ok: false, error: `메모는 ${MEMO_MAX_LENGTH}자 이내로 입력해주세요.` };
+  }
+
+  try {
+    await db.insert(leadMemos).values({ leadId, content: trimmed });
+    revalidatePath("/admin");
+    return { ok: true };
+  } catch (err) {
+    console.error("addMemo 저장 실패:", err);
+    return { ok: false, error: "메모 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
+  }
+}
+
+/**
+ * 메모를 삭제한다.
+ */
+export async function deleteMemo(id: string): Promise<AdminActionResult> {
+  if (!id) {
+    return { ok: false, error: "잘못된 요청입니다." };
+  }
+
+  try {
+    await db.delete(leadMemos).where(eq(leadMemos.id, id));
+    revalidatePath("/admin");
+    return { ok: true };
+  } catch (err) {
+    console.error("deleteMemo 삭제 실패:", err);
+    return { ok: false, error: "메모 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
   }
 }
