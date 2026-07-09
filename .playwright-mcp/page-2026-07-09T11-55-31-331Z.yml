@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - heading "레슨 문의" [level=1] [ref=e5]
+        - paragraph [ref=e6]: 아래 내용을 남겨주시면 빠르게 연락드리겠습니다.
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]: 이름*
+          - textbox "이름*" [ref=e10]:
+            - /placeholder: 홍길동
+        - generic [ref=e11]:
+          - generic [ref=e12]: 이메일*
+          - textbox "이메일*" [ref=e13]:
+            - /placeholder: example@email.com
+        - generic [ref=e14]:
+          - generic [ref=e15]: 전화번호*
+          - textbox "전화번호*" [ref=e16]:
+            - /placeholder: 010-1234-5678
+        - generic [ref=e17]:
+          - generic [ref=e18]: 문의 내용*
+          - textbox "문의 내용*" [ref=e19]:
+            - /placeholder: 문의하실 내용을 자유롭게 작성해주세요.
+        - button "문의 보내기" [ref=e20]
+  - alert [ref=e21]

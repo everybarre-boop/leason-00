@@ -1,0 +1,20 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - heading "레슨 문의" [level=1] [ref=e5]
+        - paragraph [ref=e6]: 아래 내용을 남겨주시면 빠르게 연락드리겠습니다.
+      - generic [ref=e32]:
+        - img [ref=e34]
+        - generic [ref=e36]:
+          - heading "문의가 접수되었습니다!" [level=2] [ref=e37]
+          - paragraph [ref=e38]: 빠른 시일 내에 남겨주신 연락처로 답변드리겠습니다.
+        - button "새 문의 작성하기" [ref=e39]
+  - status [ref=e40]:
+    - generic [ref=e41]:
+      - img [ref=e43]
+      - generic [ref=e45]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+  - alert [ref=e21]
