@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import posthog from "posthog-js";
 import { fireConfetti } from "./confetti";
 import { submitLead } from "./actions";
 
@@ -23,8 +24,15 @@ export function LeadForm() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 폼 작성 시작 이벤트를 세션당 한 번만 보내기 위한 플래그.
+  const startedRef = useRef(false);
 
   function update<K extends keyof FormState>(key: K, value: string) {
+    if (!startedRef.current) {
+      startedRef.current = true;
+      // 사용자가 처음으로 입력을 시작 — 퍼널 최상단.
+      posthog.capture("lead_form_started");
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -39,14 +47,18 @@ export function LeadForm() {
       const result = await submitLead(form);
 
       if (result.ok) {
+        // 리드 접수 성공 — 핵심 전환 이벤트. 개인정보(이름/이메일 등)는 담지 않는다.
+        posthog.capture("lead_submitted");
         setSubmitted(true);
         fireConfetti();
       } else {
+        posthog.capture("lead_submit_failed", { reason: "validation" });
         setError(result.error);
       }
     } catch (err) {
       // 서버 액션 호출 자체가 실패한 경우(네트워크 끊김, 서버 오류 등).
       console.error("문의 제출 실패:", err);
+      posthog.capture("lead_submit_failed", { reason: "server_error" });
       setError("일시적인 오류로 전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setSubmitting(false);
@@ -54,6 +66,9 @@ export function LeadForm() {
   }
 
   function handleReset() {
+    // 접수 완료 후 "새 문의 작성하기"를 눌러 재작성 시작.
+    posthog.capture("lead_form_reset");
+    startedRef.current = false;
     setForm(initialState);
     setSubmitted(false);
     setError(null);
