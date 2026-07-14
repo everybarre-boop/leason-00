@@ -88,3 +88,55 @@ export async function sendLeadNotification(lead: RawInput): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * 예상치 못한 에러가 발생했을 때 운영자에게 알림 메일을 보낸다.
+ * 리드 알림과 동일한 수신/발신 설정(LEAD_NOTIFICATION_TO / LEAD_NOTIFICATION_FROM)을 쓴다.
+ * 알림 발송 자체의 실패가 원래 흐름을 막지 않도록 예외를 던지지 않고 성공 여부만 반환한다.
+ */
+export async function sendErrorNotification(
+  context: string,
+  error: unknown
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.LEAD_NOTIFICATION_TO;
+  const from = process.env.LEAD_NOTIFICATION_FROM?.trim() || "onboarding@resend.dev";
+
+  if (!apiKey || !to) {
+    console.warn(
+      "에러 알림 메일 건너뜀: RESEND_API_KEY 또는 LEAD_NOTIFICATION_TO 미설정"
+    );
+    return false;
+  }
+
+  const detail =
+    error instanceof Error
+      ? `${error.name}: ${error.message}\n\n${error.stack ?? "(스택 없음)"}`
+      : String(error);
+
+  try {
+    const resend = new Resend(apiKey);
+
+    const { error: sendError } = await resend.emails.send({
+      from: `에러 알림 <${from}>`,
+      to,
+      subject: `[에러 알림] ${context}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; color: #111;">
+          <h2 style="margin: 0 0 12px;">예상치 못한 에러가 발생했습니다</h2>
+          <p style="margin: 0 0 12px; color: #555;">위치: <strong>${escapeHtml(context)}</strong></p>
+          <pre style="background: #0b1020; color: #e5e7eb; padding: 16px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.5;">${escapeHtml(detail)}</pre>
+        </div>
+      `,
+    });
+
+    if (sendError) {
+      console.error("에러 알림 메일 발송 실패:", sendError);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("에러 알림 메일 발송 예외:", err);
+    return false;
+  }
+}

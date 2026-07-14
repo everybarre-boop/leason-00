@@ -35,15 +35,21 @@ export function LeadForm() {
     setSubmitting(true);
     setError(null);
 
-    const result = await submitLead(form);
+    try {
+      const result = await submitLead(form);
 
-    setSubmitting(false);
-
-    if (result.ok) {
-      setSubmitted(true);
-      fireConfetti();
-    } else {
-      setError(result.error);
+      if (result.ok) {
+        setSubmitted(true);
+        fireConfetti();
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      // 서버 액션 호출 자체가 실패한 경우(네트워크 끊김, 서버 오류 등).
+      console.error("문의 제출 실패:", err);
+      setError("일시적인 오류로 전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
