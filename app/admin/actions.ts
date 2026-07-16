@@ -65,7 +65,8 @@ export async function addMemo(
   leadId: string,
   content: string
 ): Promise<AdminActionResult> {
-  if (!leadId) {
+  // 서버 액션은 조작된 요청도 받으므로 타입만 믿지 않고 런타임에 확인한다.
+  if (!leadId || typeof content !== "string") {
     return { ok: false, error: "잘못된 요청입니다." };
   }
 

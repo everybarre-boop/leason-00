@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import posthog from "posthog-js";
 import { fireConfetti } from "./confetti";
+import { logStage, newTraceId } from "@/lib/logger";
 import { submitLead } from "./actions";
 
 type FormState = {
@@ -43,8 +44,15 @@ export function LeadForm() {
     setSubmitting(true);
     setError(null);
 
+    // 브라우저 콘솔 쪽 traceId. 서버 로그의 traceId와는 별개이므로
+    // 두 로그를 이을 때는 시간순으로 대조한다.
+    const traceId = newTraceId();
+    const startedAt = Date.now();
+    logStage(traceId, "client:submit");
+
     try {
       const result = await submitLead(form);
+      logStage(traceId, "client:result", { ok: result.ok, ms: Date.now() - startedAt });
 
       if (result.ok) {
         // 리드 접수 성공 — 핵심 전환 이벤트. 개인정보(이름/이메일 등)는 담지 않는다.
@@ -52,11 +60,18 @@ export function LeadForm() {
         setSubmitted(true);
         fireConfetti();
       } else {
-        posthog.capture("lead_submit_failed", { reason: "validation" });
+        // 서버가 준 code로 구분한다. 저장 실패(db_error)를 입력 오류로 집계하면
+        // 장애가 "사용자 입력 실수"로 보여 감지가 늦어진다.
+        posthog.capture("lead_submit_failed", { reason: result.code });
         setError(result.error);
       }
     } catch (err) {
       // 서버 액션 호출 자체가 실패한 경우(네트워크 끊김, 서버 오류 등).
+      logStage(traceId, "client:result", {
+        ok: false,
+        ms: Date.now() - startedAt,
+        error: err instanceof Error ? err.message : String(err),
+      });
       console.error("문의 제출 실패:", err);
       posthog.capture("lead_submit_failed", { reason: "server_error" });
       setError("일시적인 오류로 전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
