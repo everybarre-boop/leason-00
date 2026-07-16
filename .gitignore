@@ -39,3 +39,11 @@ next-env.d.ts
 
 # drizzle
 /db/migrations
+
+# 테스트 아티팩트
+# 어드민 화면을 캡처하면 리드의 이름·이메일·전화번호가 그대로 찍히므로
+# 저장소에 들어가지 않게 막는다.
+/.playwright-mcp/
+*.png
+*.jpg
+*.jpeg
